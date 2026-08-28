@@ -13,9 +13,8 @@ import io
 import win32con
 import win32file
 
-# CustomTkinter appearance settings
-ctk.set_appearance_mode("dark")   # Options: "light", "dark", "system"
-ctk.set_default_color_theme("blue")  # Options: "blue", "green", "dark-blue"
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 class ClipboardManager:
     def __init__(self):
@@ -23,14 +22,12 @@ class ClipboardManager:
         self.root.title("Clipboard Manager Pro")
         self.root.geometry("750x550")
         self.root.resizable(True, True)
-        
-        # Try to set icon (optional)
+
         try:
-            self.root.iconbitmap("icon.ico")  # If you have an icon file
+            self.root.iconbitmap("icon.ico")
         except:
             pass
 
-        # Storage directories and files
         self.data_dir = "clipboard_data"
         os.makedirs(self.data_dir, exist_ok=True)
         self.history_file = "history.json"
@@ -38,21 +35,12 @@ class ClipboardManager:
         self.last_clip_text = ""
         self.last_clip_hashes = {}
 
-        # Load existing history
         self.load_history()
-        
-        # Build UI
         self.create_widgets()
-        
-        # Start monitoring
         self.monitor_clipboard()
-        
-        # Auto-save on close
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    # ---------- Persistent Storage ----------
     def load_history(self):
-        """Load history from JSON file"""
         if os.path.exists(self.history_file):
             try:
                 with open(self.history_file, "r", encoding="utf-8") as f:
@@ -63,35 +51,30 @@ class ClipboardManager:
                 self.history = []
 
     def save_history(self):
-        """Save history to JSON file"""
         try:
             with open(self.history_file, "w", encoding="utf-8") as f:
                 json.dump(self.history, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Save error: {e}")
 
-    # ---------- UI Construction ----------
     def create_widgets(self):
-        """Create all UI elements"""
-        # Top frame (title + counter)
         top_frame = ctk.CTkFrame(self.root)
         top_frame.pack(pady=10, padx=15, fill="x")
 
         self.title_label = ctk.CTkLabel(
-            top_frame, 
-            text="📋 Clipboard History", 
+            top_frame,
+            text="📋 Clipboard History",
             font=("Segoe UI", 18, "bold")
         )
         self.title_label.pack(side="left", padx=10)
 
         self.count_label = ctk.CTkLabel(
-            top_frame, 
-            text=f"Items: {len(self.history)}", 
+            top_frame,
+            text=f"Items: {len(self.history)}",
             font=("Segoe UI", 13)
         )
         self.count_label.pack(side="right", padx=10)
 
-        # Listbox with scrollbar
         list_frame = ctk.CTkFrame(self.root)
         list_frame.pack(pady=5, padx=15, fill="both", expand=True)
 
@@ -111,66 +94,59 @@ class ClipboardManager:
         scrollbar.pack(side="right", fill="y")
         self.listbox.config(yscrollcommand=scrollbar.set)
 
-        # Double-click to copy
         self.listbox.bind("<Double-Button-1>", self.copy_selected)
 
-        # Action buttons
         btn_frame = ctk.CTkFrame(self.root)
         btn_frame.pack(pady=10, padx=15, fill="x")
 
         ctk.CTkButton(
-            btn_frame, 
-            text="📋 Copy Selected", 
-            command=self.copy_selected, 
+            btn_frame,
+            text="📋 Copy Selected",
+            command=self.copy_selected,
             width=140
         ).pack(side="left", padx=5)
 
         ctk.CTkButton(
-            btn_frame, 
-            text="🗑️ Delete Selected", 
-            command=self.delete_selected, 
-            width=140, 
+            btn_frame,
+            text="🗑️ Delete Selected",
+            command=self.delete_selected,
+            width=140,
             fg_color="#d35b5b"
         ).pack(side="left", padx=5)
 
         ctk.CTkButton(
-            btn_frame, 
-            text="🧹 Clear All", 
-            command=self.clear_all, 
-            width=140, 
+            btn_frame,
+            text="🧹 Clear All",
+            command=self.clear_all,
+            width=140,
             fg_color="#6c757d"
         ).pack(side="left", padx=5)
 
         ctk.CTkButton(
-            btn_frame, 
-            text="🔄 Refresh", 
-            command=self.refresh_list, 
-            width=140, 
+            btn_frame,
+            text="🔄 Refresh",
+            command=self.refresh_list,
+            width=140,
             fg_color="#2b8cbe"
         ).pack(side="left", padx=5)
 
-        # Status label
         self.status_label = ctk.CTkLabel(
-            self.root, 
-            text="✅ Monitoring clipboard...", 
-            font=("Segoe UI", 11), 
+            self.root,
+            text="✅ Monitoring clipboard...",
+            font=("Segoe UI", 11),
             text_color="lightgreen"
         )
         self.status_label.pack(pady=8)
 
-        # Populate list
         self.refresh_list()
 
-    # ---------- List Management ----------
     def refresh_list(self):
-        """Refresh the listbox display"""
         self.listbox.delete(0, tk.END)
         for idx, item in enumerate(self.history, 1):
             item_type = item.get("type", "text")
             content = item.get("content", "")
             timestamp = item.get("timestamp", "")
 
-            # Display based on type
             if item_type == "text":
                 display = f"{idx}. 📝 {content[:55]}{'...' if len(content)>55 else ''}"
             elif item_type == "image":
@@ -186,14 +162,11 @@ class ClipboardManager:
         self.count_label.configure(text=f"Items: {len(self.history)}")
 
     def add_item(self, item_type, content):
-        """Add a new item to history (avoid duplicates)"""
-        # Duplicate prevention
         if item_type == "text":
             if self.history and self.history[-1].get("type") == "text" and self.history[-1].get("content") == content:
                 return
         elif item_type == "image":
-            # Simple duplicate check for images
-            for item in self.history[-5:]:  # Check last 5 items
+            for item in self.history[-5:]:
                 if item.get("type") == "image" and item.get("content") == content:
                     return
         elif item_type == "files":
@@ -214,11 +187,8 @@ class ClipboardManager:
         )
         self.listbox.see(tk.END)
 
-    # ---------- Clipboard Monitoring ----------
     def monitor_clipboard(self):
-        """Periodic clipboard check for changes"""
         try:
-            # 1. Check for image
             img = self.get_clipboard_image()
             if img:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
@@ -228,30 +198,24 @@ class ClipboardManager:
                 self.root.after(500, self.monitor_clipboard)
                 return
 
-            # 2. Check for files
             files = self.get_clipboard_files()
             if files:
                 self.add_item("files", files)
                 self.root.after(500, self.monitor_clipboard)
                 return
 
-            # 3. Check for text
             text = pyperclip.paste()
             if text and text != self.last_clip_text:
                 self.last_clip_text = text
                 if text.strip() != "":
                     self.add_item("text", text)
 
-        except Exception as e:
-            # Silently handle errors to prevent crash
+        except Exception:
             pass
 
-        # Schedule next check
         self.root.after(500, self.monitor_clipboard)
 
-    # ---------- Windows Clipboard Readers ----------
     def get_clipboard_image(self):
-        """Get image from Windows clipboard"""
         try:
             img = ImageGrab.grabclipboard()
             if isinstance(img, Image.Image):
@@ -261,7 +225,6 @@ class ClipboardManager:
         return None
 
     def get_clipboard_files(self):
-        """Get list of files from Windows clipboard"""
         try:
             win32clipboard.OpenClipboard()
             if win32clipboard.IsClipboardFormatAvailable(win32con.CF_HDROP):
@@ -275,7 +238,6 @@ class ClipboardManager:
         return None
 
     def _parse_hdrop(self, hdrop):
-        """Parse HDROP structure to file paths"""
         try:
             num_files = win32file.DragQueryFile(hdrop, 0xFFFFFFFF)
             files = []
@@ -286,9 +248,7 @@ class ClipboardManager:
         except:
             return []
 
-    # ---------- Copy to Clipboard ----------
     def copy_selected(self, event=None):
-        """Copy selected item back to clipboard"""
         selection = self.listbox.curselection()
         if not selection:
             messagebox.showinfo("Info", "Please select an item first.")
@@ -320,36 +280,29 @@ class ClipboardManager:
         except Exception as e:
             messagebox.showerror("Error", f"Copy failed: {str(e)}")
 
-        # Reset status after 2 seconds
         self.root.after(2000, lambda: self.status_label.configure(
-            text="✅ Monitoring clipboard...", 
+            text="✅ Monitoring clipboard...",
             text_color="lightgreen"
         ))
 
     def _copy_image_to_clipboard(self, img):
-        """Copy PIL image to Windows clipboard (DIB format)"""
         from io import BytesIO
         output = BytesIO()
         img.convert("RGB").save(output, format="BMP")
-        data = output.getvalue()[14:]  # Remove BMP header
+        data = output.getvalue()[14:]
         win32clipboard.OpenClipboard()
         win32clipboard.EmptyClipboard()
         win32clipboard.SetClipboardData(win32con.CF_DIB, data)
         win32clipboard.CloseClipboard()
 
     def _copy_files_to_clipboard(self, file_paths):
-        """Copy file list to clipboard (as text, fallback method)"""
-        # Note: Full HDROP implementation requires more complex code
-        # This is a simple fallback that copies paths as text
         pyperclip.copy("\n".join(file_paths))
         self.status_label.configure(
-            text="📁 File paths copied as text (full file copy coming soon)", 
+            text="📁 File paths copied as text (full file copy coming soon)",
             text_color="yellow"
         )
 
-    # ---------- Delete Operations ----------
     def delete_selected(self):
-        """Delete selected item from history"""
         selection = self.listbox.curselection()
         if not selection:
             messagebox.showinfo("Info", "Select an item first.")
@@ -370,7 +323,6 @@ class ClipboardManager:
             self.status_label.configure(text="🗑️ Item deleted.", text_color="orange")
 
     def clear_all(self):
-        """Clear all history"""
         if not self.history:
             messagebox.showinfo("Info", "History is already empty.")
             return
@@ -388,13 +340,10 @@ class ClipboardManager:
             self.refresh_list()
             self.status_label.configure(text="🧹 All history cleared.", text_color="red")
 
-    # ---------- Application Close ----------
     def on_close(self):
-        """Save and exit"""
         self.save_history()
         self.root.destroy()
 
-    # ---------- Run ----------
     def run(self):
         self.root.mainloop()
 
