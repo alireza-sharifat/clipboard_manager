@@ -31,7 +31,7 @@ A powerful Windows clipboard manager that captures and stores everything you cop
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/clipboard-manager-pro.git
+git clone https://github.com/alireza-sharifat/clipboard-manager-pro.git
 cd clipboard-manager-pro
 
 # Install dependencies
